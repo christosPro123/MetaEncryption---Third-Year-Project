@@ -14,8 +14,7 @@ chrome.runtime.onInstalled.addListener(function() {
             });
         }
         else {
-            var str = JSON.stringify(result.key)
-            console.log(`Key Found  - ${str}`);
+            console.log('Key Found');
         }
     });
 
