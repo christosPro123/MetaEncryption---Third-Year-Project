@@ -74,14 +74,16 @@ input_enc.addEventListener("change",  () => {
         chrome.storage.local.get(['key','iv'], function(result) {
             var key = result.key;
             var iv = result.iv;
-            var wordArray = crypto.lib.WordArray.create(reader.result);           // Convert: ArrayBuffer -> WordArray
-            var encrypted = crypto.AES.encrypt(wordArray, key,{iv: iv}).toString();        // Encryption: I: WordArray -> O: -> Base64 encoded string (OpenSSL-format)
-
-            var fileEnc = new Blob([encrypted]);                                    // Create blob from string
-
+            // Convert: ArrayBuffer -> WordArray
+            var wordArray = crypto.lib.WordArray.create(reader.result);
+            // Encryption: I: WordArray -> O: -> Base64 encoded string (OpenSSL-format)
+            var encrypted = crypto.AES.encrypt(wordArray, key,{iv: iv}).toString();
+            // Create blob from string
+            var fileEnc = new Blob([encrypted]);
             var a = document.createElement("a");
             var url = window.URL.createObjectURL(fileEnc);
             var filename = file.name;
+            alert(filename);
             a.href = url;
             a.download = filename;
             a.click();
@@ -105,16 +107,22 @@ input_dec.addEventListener("change", () => {
         chrome.storage.local.get(['key','iv'], function(result) {
             var key = result.key;
             var iv = result.iv;
-            var decrypted = crypto.AES.decrypt(reader.result, key,{iv: iv});               // Decryption: I: Base64 encoded string (OpenSSL-format) -> O: WordArray
-            var typedArray = convertWordArrayToUint8Array(decrypted);               // Convert: WordArray -> typed array
 
-            var fileDec = new Blob([typedArray]);                                   // Create blob from typed array
+            // Decryption: I: Base64 encoded string (OpenSSL-format) -> O: WordArray
+            var decrypted = crypto.AES.decrypt(reader.result, key,{iv: iv});
+
+            // Convert: WordArray -> typed array
+            var typedArray = convertWordArrayToUint8Array(decrypted);
+
+            // Create blob from typed array
+            var fileDec = new Blob([typedArray],{type: 'application/octet-stream'});
 
             var a = document.createElement("a");
             var url = window.URL.createObjectURL(fileDec);
-            var filename = file.name.substr(0, file.name.length-4) + ".db";
-            a.href = url;
-            a.download = filename;
+            var filename = file.name.split('.')[0];
+            a.href=url;
+            a.download=filename;
+            a.setAttribute('download',filename);
             a.click();
             window.URL.revokeObjectURL(url);
         });
@@ -134,4 +142,18 @@ function convertWordArrayToUint8Array(wordArray) {
         uInt8Array[index++] = word & 0xff;
     }
     return uInt8Array;
+}
+
+function typedArrayToBuffer(array) {
+    return array.buffer.slice(array.byteOffset, array.byteLength + array.byteOffset)
+}
+
+function _arrayBufferToBase64( buffer ) {
+    var binary = '';
+    var bytes = new Uint8Array( buffer );
+    var len = bytes.byteLength;
+    for (var i = 0; i < len; i++) {
+        binary += String.fromCharCode( bytes[ i ] );
+    }
+    return window.btoa( binary );
 }
