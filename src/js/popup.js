@@ -25,46 +25,6 @@ decrypt.addEventListener("click", async () => {
     // });
 });
 
-//      ----- ORIGINAL -----
-// input_enc.addEventListener("change",  () => {
-//    let files = input_enc.files;
-//
-//    if (files.length == 0)
-//        return;
-//
-//    let file = files[0];
-//
-//    let reader = new FileReader();
-//    reader.onload = (e) => {
-//        const file  = e.target.result;
-//        const lines = file.split(/\r\n|\n/);
-//        alert(lines.join('\n'));
-//    };
-//
-//    reader.onerror = (e) => alert(e.target.error.name);
-//    reader.readAsText(file);
-// });
-
-//      ----- ORIGINAL ------
-// input_dec.addEventListener("change", () => {
-//     let files = input_dec.files;
-//
-//     if (files.length == 0)
-//         return;
-//
-//     let file = files[0];
-//
-//     let reader = new FileReader();
-//     reader.onload = (e) => {
-//         const file  = e.target.result;
-//         const lines = file.split(/\r\n|\n/);
-//         alert(lines.join('\n'));
-//     };
-//
-//     reader.onerror = (e) => alert(e.target.error.name);
-//     reader.readAsText(file);
-// });
-
 //      ----- ENCRYPTION TEST ----
 input_enc.addEventListener("change",  () => {
     let files = input_enc.files;
@@ -142,18 +102,4 @@ function convertWordArrayToUint8Array(wordArray) {
         uInt8Array[index++] = word & 0xff;
     }
     return uInt8Array;
-}
-
-function typedArrayToBuffer(array) {
-    return array.buffer.slice(array.byteOffset, array.byteLength + array.byteOffset)
-}
-
-function _arrayBufferToBase64( buffer ) {
-    var binary = '';
-    var bytes = new Uint8Array( buffer );
-    var len = bytes.byteLength;
-    for (var i = 0; i < len; i++) {
-        binary += String.fromCharCode( bytes[ i ] );
-    }
-    return window.btoa( binary );
 }
