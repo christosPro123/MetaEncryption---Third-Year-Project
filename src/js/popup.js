@@ -1,31 +1,38 @@
-var crypto = require('crypto-js')
+var crypto = require('crypto-js');
+var filesaver = require('file-saver');
 let encrypt = document.getElementById("encrypt");
 let decrypt = document.getElementById("decrypt");
+let changeKey = document.getElementById("changeKey")
 let input_enc = document.getElementById("getfileEnc");
 let input_dec = document.getElementById("getfileDec");
 
 
+//Listener For "Encrypt" Button - initialises encryption process
 encrypt.addEventListener("click", async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     console.log("ENCRYPT button clicked");
     input_enc.click();
-    // chrome.scripting.executeScript({
-    //     target: { tabId: tab.id },
-    //     function: startEncryption
-    // });
 });
 
+//Listener for "Decrypt" Button - Initialises decryption Process
 decrypt.addEventListener("click", async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     console.log("DECRYPT button clicked");
     input_dec.click();
-    // chrome.scripting.executeScript({
-    //     target: {tabId: tab.id},
-    //     function: startDecryption
-    // });
 });
 
-//      ----- ENCRYPTION TEST ----
+changeKey.addEventListener("click", async () => {
+    console.log("CHANGE KEY button clicked");
+    getUserKey();
+})
+
+
+
+//Encryption Process
+//Retrieval of key and IV from chrome storage API, passes them onto CryptoJS to use for AES encryption
+//File is read as array buffer and passed as an arguement to CryptoJS to create a WordArray object
+//Encrypts WordArray with key and IV using AES, creates a blob from the B64 encoded string
+//A URL is then made for the blob, and passed into chrome.downloads API to open a "Save As" dialog for downloading it
 input_enc.addEventListener("change",  () => {
     let files = input_enc.files;
     var file = files[0];
@@ -34,26 +41,38 @@ input_enc.addEventListener("change",  () => {
         chrome.storage.local.get(['key','iv'], function(result) {
             var key = result.key;
             var iv = result.iv;
+
             // Convert: ArrayBuffer -> WordArray
             var wordArray = crypto.lib.WordArray.create(reader.result);
+
             // Encryption: I: WordArray -> O: -> Base64 encoded string (OpenSSL-format)
             var encrypted = crypto.AES.encrypt(wordArray, key,{iv: iv}).toString();
+
             // Create blob from string
             var fileEnc = new Blob([encrypted]);
+
             var a = document.createElement("a");
             var url = window.URL.createObjectURL(fileEnc);
             var filename = file.name;
-            alert(filename);
-            a.href = url;
-            a.download = filename;
-            a.click();
-            window.URL.revokeObjectURL(url);
+
+            chrome.downloads.download({
+                    filename: filename,
+                    url: url,
+                    saveAs: true
+                }, function (downloadId){
+                    console.log(downloadId);
+                }
+            );
         });
     };
     reader.readAsArrayBuffer(file);
 });
 
-//      ----- ENCRYPTION TEST -----
+
+//Decryption Process
+//Similar to Encryption - differences being file is read as text instead of an array buffer (B64 encoded string)
+//The decrypted WordArray is then made into a typed array of unsigned 8bit integers, that can then be made into
+// a blob of type "application/octet-stream", the type that is read and expected by Chrome
 input_dec.addEventListener("change", () => {
     let files = input_dec.files;
 
@@ -80,16 +99,23 @@ input_dec.addEventListener("change", () => {
             var a = document.createElement("a");
             var url = window.URL.createObjectURL(fileDec);
             var filename = file.name.split('.')[0];
-            a.href=url;
-            a.download=filename;
-            a.setAttribute('download',filename);
-            a.click();
-            window.URL.revokeObjectURL(url);
+
+            // "../AppData/Local/Google/Chrome/User Data/Default/"
+            chrome.downloads.download({
+               filename: filename,
+               url: url,
+               saveAs: true
+            }, function (downloadId){
+                console.log(downloadId);
+                }
+             );
         });
     };
     reader.readAsText(file);
 });
 
+
+//Helper Function that transforms a WordArray into a array of 8bit unsigned integers
 function convertWordArrayToUint8Array(wordArray) {
     var arrayOfWords = wordArray.hasOwnProperty("words") ? wordArray.words : [];
     var length = wordArray.hasOwnProperty("sigBytes") ? wordArray.sigBytes : arrayOfWords.length * 4;
@@ -102,4 +128,12 @@ function convertWordArrayToUint8Array(wordArray) {
         uInt8Array[index++] = word & 0xff;
     }
     return uInt8Array;
+}
+
+
+function getUserKey(){
+    let userKey = window.prompt("Input new encryption key");
+    if (userKey == null)
+        return;
+    alert(userKey);
 }
