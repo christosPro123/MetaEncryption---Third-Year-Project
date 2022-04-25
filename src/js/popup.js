@@ -1,4 +1,4 @@
-var crypto = require('crypto-js');
+var cryptojs = require('crypto-js');
 var filesaver = require('file-saver');
 let encrypt = document.getElementById("encrypt");
 let decrypt = document.getElementById("decrypt");
@@ -43,10 +43,10 @@ input_enc.addEventListener("change",  () => {
             var iv = result.iv;
 
             // Convert: ArrayBuffer -> WordArray
-            var wordArray = crypto.lib.WordArray.create(reader.result);
+            var wordArray = cryptojs.lib.WordArray.create(reader.result);
 
             // Encryption: I: WordArray -> O: -> Base64 encoded string (OpenSSL-format)
-            var encrypted = crypto.AES.encrypt(wordArray, key,{iv: iv}).toString();
+            var encrypted = cryptojs.AES.encrypt(wordArray, key,{iv: iv}).toString();
 
             // Create blob from string
             var fileEnc = new Blob([encrypted]);
@@ -88,7 +88,7 @@ input_dec.addEventListener("change", () => {
             var iv = result.iv;
 
             // Decryption: I: Base64 encoded string (OpenSSL-format) -> O: WordArray
-            var decrypted = crypto.AES.decrypt(reader.result, key,{iv: iv});
+            var decrypted = cryptojs.AES.decrypt(reader.result, key,{iv: iv});
 
             // Convert: WordArray -> typed array
             var typedArray = convertWordArrayToUint8Array(decrypted);
@@ -135,5 +135,21 @@ function getUserKey(){
     let userKey = window.prompt("Input new encryption key");
     if (userKey == null)
         return;
-    alert(userKey);
+
+    var vector = cryptojs.lib.WordArray.random(16);
+    var salt = cryptojs.lib.WordArray.random(128/8);
+    var newKey = cryptojs.PBKDF2(userKey, salt, { keySize: 256 / 32, iterations: 1000 });
+    alert("3");
+
+    chrome.storage.local.set({iv: vector}, function(){
+        alert("New Vector Set");
+    });
+
+    chrome.storage.local.set({key: newKey}, function (){
+        alert("New Key Set");
+    });
+
+    chrome.storage.local.get(['key'],function(result) {
+        alert('Value currently is ' + result.key);
+    })
 }

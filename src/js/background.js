@@ -1,4 +1,3 @@
-let color = '#3aa757';
 var cryptojs = require("crypto-js")
 
 chrome.runtime.onInstalled.addListener(function() {
